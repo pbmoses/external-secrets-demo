@@ -9,3 +9,7 @@ Note: edit statefulset and update image, default in chart is old.
     3  vault kv put secret/vault-demo-secret1 username="phil" password="notverysecure"
     4  vault kv get secret secret/vault-demo-secret1
     5  vault kv get secret/vault-demo-secret1
+
+
+    9  OCP_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+   11  curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": ""}' http://172.30.46.242:8200/v1/auth/kubernetes/login
