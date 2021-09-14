@@ -1,3 +1,7 @@
+vault write auth/kubernetes/role/exsecretsdemo bound_service_account_names=es-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m
+
+
+
 # vault_demo
 helm install vault hashicorp/vault     --set "global.openshift=true"     --set "server.dev.enabled=true" --set="injector.enabled=false"
 
@@ -11,7 +15,7 @@ Note: edit statefulset and update image, default in chart is old.
     5  vault kv get secret/vault-demo-secret1
 
    19  vault policy write pmodemo - <<EOF
-path "secret/vault-demo-secret1" {
+path "secret/data/vault-demo-secret1" {
   capabilities = ["read"]
 }
                                           
@@ -115,3 +119,11 @@ sh-4.4$ curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodem
                                           
  curl --silent http://127.0.0.1:8001/api/v1/namespaces/default/serviceaccounts/default/token   -H "Content-Type: application/json"   -X POST   -d '{"apiVersion": "authentication.k8s.io/v1", "kind": "TokenRequest"}'   | jq -r '.status.token'   | cut -d. -f2   | base64 -d
 {"aud":["https://kubernetes.default.svc"],"exp":1631646050,"iat":1631642450,"iss":"https://kubernetes.default.svc","kubernetes.io":{"namespace":"default","serviceaccount":{"name":"default","uid":"466621df-acac-43f6-ac8d-de56e04213a3"}},"nbf":1631642450,"sub":"system:serviceaccount:default:default"}base64: invalid input
+
+    kubectl proxy &
+curl --silent http://127.0.0.1:8001/.well-known/openid-configuration | jq -r .issuer
+
+                                          
+                                          
+   ****vault server -config=/etc/vault/config-file.hcl -log-level=debug*****
+                                          
