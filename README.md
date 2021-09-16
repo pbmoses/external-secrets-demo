@@ -127,8 +127,5 @@ curl --silent http://127.0.0.1:8001/.well-known/openid-configuration | jq -r .is
 
                                           
                                           
-   ****vault server -config=/etc/vault/config-file.hcl -log-level=debug*****
-                                          
-                                          
- to view / enable logging = ****vault audit enable file file_path=/var/log/vault_audit.log****
-                                         **** vault audit enable syslog ****
+set vault_addr then
+                                          vault audit enable -path="vault_audit_1" file file_path=/tmp/vault_audit.log
