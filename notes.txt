@@ -1,0 +1,30 @@
+sh-4.4$ history
+    1  vault auth enable kubernetes
+    2  2  vault write auth/kubernetes/config token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    3  vault write auth/kubernetes/config token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt issuer=https://kubernetes.default.svc
+    4  vault kv put secret/vault-demo-secret1 username="phil" password="notverysecure"
+    5  vault kv get secret/vault-demo-secret1
+    6  vault policy write pmodemo - << EOF
+    7  path "secret/data/vault-demo-secret1"
+    8    { capabilities = ["read"]
+    9  }
+   10  EOF
+   11  vault write auth/kubernetes/role/pmodemo bound_service_account_names=es-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m
+   12  OCP_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+   13  oc get svc
+   14  exit
+   15  OCP_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+   16  curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodemo"}' http://10.217.4.213:8200/v1/auth/kubernetes/login
+   17  vault write auth/kubernetes/role/pmodemo bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m
+   18  curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodemo"}' http://10.217.4.213:8200/v1/auth/kubernetes/login
+   19  exit
+   20  history
+   21  vault write auth/kubernetes/role/pmodemo bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m
+   22  exit
+   23  vault write auth/kubernetes/role/pmodemo1 bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m
+   24  history | grep pmo
+   25  vault write auth/kubernetes/role/pmodemo bound_service_account_names=es-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m
+   26  exit
+   27  vault write auth/kubernetes/role/pmodemo bound_service_account_names=external-secrets-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m
+   28  exit
+   29  history
