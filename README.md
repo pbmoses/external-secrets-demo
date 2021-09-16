@@ -1,3 +1,5 @@
+the service account and namespace need to be from external-secrets
+
 vault write auth/kubernetes/role/exsecretsdemo bound_service_account_names=es-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m
 
 
