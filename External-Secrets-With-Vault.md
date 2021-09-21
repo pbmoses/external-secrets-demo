@@ -116,18 +116,14 @@ If you see something similar to the above, Vault is installed and authentication
 
 ``oc project external-secrets``
 
-```helm install external-secrets external-secrets/kubernetes-external-secrets
+``helm install external-secrets external-secrets/kubernetes-external-secrets
 
 The deployment of External-Secrets relies on environment variables to configure where/how to reach the Vault API. You can set the VAULT_ADDR variable to the IP:Port of your Vault implementation:
         - name: VAULT_ADDR
-          value: http://10.217.5.249:8200
-```
+          value: http://10.217.5.249:8200 ``
 
 Lets now create the external-secret manifest. We will need to consider the data for the secret (being extracted from Vault) as well as the vaultMountPoint and vaultRole. 
-
-
-
-
+```
 
 apiVersion: kubernetes-client.io/v1
 kind: ExternalSecret
@@ -142,7 +138,7 @@ spec:
       property: password
   vaultMountPoint: kubernetes
   vaultRole: pmodemo 
-
+```
 oc create -f secret1.yml
 
 And… we check the secret and see it has successfully pulled data from the Vault. 
