@@ -180,8 +180,15 @@ data:
 kind: Secret
 ….
 ```
+You can decide the secret data and compare it to the secret you setup earlier:
+```
+echo "bm90dmVyeXNlY3VyZQ==" | base64 -d 
+notverysecure
+``` 
 
-``oc get es exsecretsdemo -o yaml``
+``oc get es exsecret1 -o yaml``
+
+And we verify there is no data in the manifest which would present a risk
 
 ```
 spec:
@@ -194,10 +201,9 @@ spec:
   vaultRole: pmodemo
 ```
 
-And… it’s just that simple. 
+It’s just that simple. In this demo we've setup a dev Vault, enabled Kubernetes authentication, created a secret, a role and policy for the secret access. 
 
-**Added Value, adding our external-secret to ArgoCD**
 
-With a running instance of ArgoCD, we can 
+
 
 
