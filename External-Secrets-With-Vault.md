@@ -9,9 +9,10 @@ ES extends the Kubernetes API vi an ExternalSecrets object + a controller. In sh
 
 **Assumptions for the proof of concept**
 
-Access to a working OpenShift cluster. If a Cluster is not available, Code Ready Containers can be utilized to PoC. https://developers.redhat.com/products/codeready-containers/overview
-A Hashicorp vault implementation. In the demo, dev mode is utilized with a single pod. This is not meant for production and should not be run outside of sandbox or development environments. **it is important to note that there has been concern around the default helm chart used for deploying the dev Vault environment. The steps taken here are a proof of concept and the dev Vault should not be run with the default config outside of a sandbox/dev environment. 
-A secret to store. 
+- Access to a working OpenShift cluster. If a Cluster is not available, Code Ready Containers can be utilized to PoC. https://developers.redhat.com/products/codeready-containers/overview
+- A Hashicorp vault implementation. In the demo, dev mode is utilized with a single pod. This is not meant for production and should not be run outside of sandbox or development environments. 
+**it is important to note that there has been concern around the default helm chart used for deploying the dev Vault environment. The steps taken here are a proof of concept and the dev Vault should not be run with the default config outside of a sandbox/dev environment. **
+- A secret to store. 
 
 
 Utilizing external-secrets is an incredibly simple process consisting of installing the tool and creating  your external-secret manifest based on secrets management back end in use. A large portion of this demo will revolve around configuring Vault. We will touch on the concepts but not deep dive into the advanced configuration options of Vault. 
