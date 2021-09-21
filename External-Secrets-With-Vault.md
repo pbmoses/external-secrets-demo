@@ -114,7 +114,8 @@ If you see something similar to the above, Vault is installed and authentication
 
 **External-Secrets Installation and Configuration**
 
-helm install external-secrets external-secrets/kubernetes-external-secrets
+`` oc project external-secrets
+helm install external-secrets external-secrets/kubernetes-external-secrets ```
 
 The deployment of External-Secrets relies on environment variables to configure where/how to reach the Vault API. You can set the VAULT_ADDR variable to the IP:Port of your Vault implementation:
         - name: VAULT_ADDR
