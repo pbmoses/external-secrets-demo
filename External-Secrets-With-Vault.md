@@ -93,7 +93,7 @@ EOF
 ```
 
 
-Step 5. We create a role, which defines a namespace and service account with the policy which was created earlier. We are making two, the external-secrets role is required, the vault role is used for testing later.
+Step 5. We create a role, which defines a namespace and service account with the policy which was created earlier. We are making two, the external-secrets role is required, the vault role is used for testing later. It is important to note that you will need to set the bound_service_account_names and the service_account_namespaces to those which are present in the deployment (external-secrets) or statefulset (vault) for your cluster. 
 
 ``vault write auth/kubernetes/role/pmodemo1 bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m``
 
@@ -113,9 +113,12 @@ Now, lets do a Curl request to the Vault host (`oc get svc` in the project will 
 
 {"request_id":"5e833fc7-4f53-f7dc-edfe-2257a42793d1","lease_id":"","renewable":false,"lease_duration":0,"data":null,"wrap_info":null,"warnings":null,"auth":{"client_token":"s.ojvma4OkSZT7qKKRj7qYDswv","accessor":"K0pI3iNha8dUi3YCAxAzumRB","policies":["default","pmodemo"],"token_policies":["default","pmodemo"],"metadata":{"role":"pmodemo","service_account_name":"vault","service_account_namespace":"vault","service_account_secret_name":"","service_account_uid":"9218e2d0-56dd-48b6-b544-d136f79297a2"},"lease_duration":3600,"renewable":true,"entity_id":"05e3113e-7685-137a-c2c4-42fafcf5f71a","token_type":"service","orphan":true}
 
-***Add more explanation here about the above data returned from Curl***
 
-If you see something similar to the above, Vault is installed and authentication is working. Now it is time to install and create an external secret! If you see an error, investigate the error appropriately, most common errors: permission overall or on the namespace or service account. 
+If you see something similar to the above, Vault is installed and authentication is working. Now it is time to install and create an external secret! If you see an error, investigate the error appropriately, most common errors:
+- Error: connect EHOSTUNREACH = the vault endpoint env var in external secrets deployment is incorrect
+- ERROR, namespace not authorized = the namespace is not set properly in the role 
+- ERROR, service account name not authorized = the service account is not proper in the role
+- 403 permission denied = review your policy
 
 **External-Secrets Deployment and Configuration**
 
@@ -142,7 +145,7 @@ spec:
       name: password
       property: password
   vaultMountPoint: kubernetes
-  vaultRole: pmodemo 
+  vaultRole: pmodemo
 ```
 
 ``oc create -f extsecret1.yml``
