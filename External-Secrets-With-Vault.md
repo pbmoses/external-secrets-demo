@@ -18,7 +18,7 @@ Utilizing external-secrets is an incredibly simple process consisting of install
 
 Assuming an OpenShift cluster or CRS is installed and you are logged in, we can create 2 projects, one for external secrets and one for the dev vault. We will also add the Helm repositories for each of the two tools we will use. 
 
-**Lets Begin the Work**
+**Lets Create the projects and add the Helm repositories**
 
 ``oc new-project vault``
 
@@ -30,24 +30,21 @@ Assuming an OpenShift cluster or CRS is installed and you are logged in, we can 
 
 
 
-Configuring Vault
-When utilizing Vault as a secrets manager back end to store secrets we can consider the steps below for a working implementation. Sealing and unsealing the Vault is out of scope for the demo, the Vault will be unsealed when installed.
-Enable Kubernetes authentication.
-Configure authentication to utilize the pod service account token and cert of the k8s host. 
-Create a secret.
-Create a Vault policy to access the secret (or secret path.)
-Create a role to associate with the policy created earlier. 
+**Configuring Vault**
 
-Enough of the talk, lets get to the action!
+When utilizing Vault as a secrets manager back end to store secrets we can consider the steps below for a working implementation. Sealing and unsealing the Vault is out of scope for the demo, the Vault will be unsealed when installed. We are installing Vault from a Helm chart, no injector is being installed. I’m approaching this to concentrate on the strengths of External-Secrets and the ability to allow the tooling to handle secrets without additional injection. Only a single vault-0 pod will start as an ephemeral Vault.
 
-oc project vault 
+- Enable Kubernetes authentication.
+- Configure authentication to utilize the pod service account token and cert of the k8s host. 
+- Create a secret.
+- Create a Vault policy to access the secret (or secret path.)
+- Create a role to associate with the policy created earlier. 
 
-We are installing Vault from a Helm chart, no injector is being installed. I’m approaching this to concentrate on the strengths of External-Secrets and the ability to allow the tooling to handle secrets without additional injection. Only a single vault-0 pod will start as an ephemeral Vault. 
+``oc project vault`` 
 
-----
-pmo$ helm install vault hashicorp/vault --set "global.openshift=true" --set "server.dev.enabled=true" --set="injector.enabled=false"
+``helm install vault hashicorp/vault --set "global.openshift=true" --set "server.dev.enabled=true" --set="injector.enabled=false"``
 
-NAME: vault
+```NAME: vault
 LAST DEPLOYED: Thu Sep 16 12:10:00 2021
 NAMESPACE: vault
 STATUS: deployed
@@ -56,6 +53,7 @@ NOTES:
 Thank you for installing HashiCorp Vault!
 
 Now that you have deployed Vault, you should look over the docs on using Vault with Kubernetes available here:https://www.vaultproject.io/docs/
+```
 
 
 I have witnessed an outdated tag being used in the Helm chart. If you are seeing an image pull error, investigate the image within your Vault statefulset and adjust your chart or deployment accordingly. For a quick and dirty fix, edit the statefulset and add the image tag of ‘latest’. (This is a quick proof of concept, this will get you up and running to demo the theory.) We begin our journey with Vault by first enabling an authentication method. In our case, we will be utilizing the kubernetes auth method and later, we will configure namespace and service account access. Because we are using a Dev environment, we will configure these at the pod level, utilizing `oc rsh` to access our Vault pod.
