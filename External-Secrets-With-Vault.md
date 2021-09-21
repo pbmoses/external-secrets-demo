@@ -14,7 +14,7 @@ External-secrets extends the Kubernetes API vi an ExternalSecrets object + a con
 - A secret to store. 
 
 
-**it is important to note that there has been concern around the default helm chart used for deploying the dev Vault environment. The steps taken here are a proof of concept and the dev Vault should not be run with the default config outside of a sandbox/dev environment.**
+**it is important to note that there has been concern around the default helm chart used for deploying the dev Vault environment. The steps taken here are a proof of concept and the dev Vault should not be run with the default config outside of a testing environment.**
 
 
 Deploying external secrets is an incredibly simple process consisting of installing the tooling and creating  your external-secret manifest based on secrets management back end in use. Secrets management back ends are not limited to Vault, you can see all of the documentation on External=Secrets here: https://github.com/external-secrets/kubernetes-external-secrets
