@@ -5,14 +5,16 @@ I’ve been spending a fair amount of time researching secrets management with O
 
 **What are External-Secrets?**
 
-ES extends the Kubernetes API vi an ExternalSecrets object + a controller. In short, the external secret object declares how/where to fetch the secret data and in turn the controller converts that to a secret in the namespace. In the case of GitOps, utilizing external-secrets allows you to store the ES in Git without exposing a secret in Git or the tooling (Argo, Flux, etc). In the case of application consumption of secrets, pods are able to utilize secrets just as they normally would, with no maintenance or overhead, the ES controller creates the secret based on the eternal-secret manifest.  
+External-Secrets extends the Kubernetes API vi an ExternalSecrets object + a controller. In short, the external secret object declares how/where to fetch the secret data and in turn the controller converts that to a secret in the namespace. In the case of GitOps, utilizing external-secrets allows you to store the External-Secret in Git without exposing a secret in Git or the tooling (Argo, Flux, etc). In the case of application consumption of secrets, pods are able to utilize secrets just as they normally would, with little maintenance or overhead, the External-Secrets controller creates the secret based on the eternal-secret manifest. Everbody knows the rules... NO SECRETS IN GIT! and External-Secrets allows us to play by the rules. 
 
-**Assumptions for the proof of concept**
+**Assumptions for this Demo**
 
 - Access to a working OpenShift cluster. If a Cluster is not available, Code Ready Containers can be utilized to PoC. https://developers.redhat.com/products/codeready-containers/overview
-- A Hashicorp vault implementation. In the demo, dev mode is utilized with a single pod. This is not meant for production and should not be run outside of sandbox or development environments. 
-**it is important to note that there has been concern around the default helm chart used for deploying the dev Vault environment. The steps taken here are a proof of concept and the dev Vault should not be run with the default config outside of a sandbox/dev environment. **
+- A Hashicorp vault implementation. In the demo, dev mode is utilized with a single pod. This is not meant for production and should not be run outside of sandbox or development environment
+- s. 
 - A secret to store. 
+**it is important to note that there has been concern around the default helm chart used for deploying the dev Vault environment. The steps taken here are a proof of concept and the dev Vault should not be run with the default config outside of a sandbox/dev environment. **
+
 
 
 Utilizing external-secrets is an incredibly simple process consisting of installing the tool and creating  your external-secret manifest based on secrets management back end in use. A large portion of this demo will revolve around configuring Vault. We will touch on the concepts but not deep dive into the advanced configuration options of Vault. 
