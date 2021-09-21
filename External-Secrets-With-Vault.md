@@ -203,7 +203,7 @@ spec:
   vaultRole: pmodemo
 ```
 
-It’s just that simple. In this demo we've setup a dev Vault, enabled Kubernetes authentication, created a secret, a role and policy for the secret access. 
+It’s just that simple. In this demo we've setup a dev Vault, enabled Kubernetes authentication, created a secret, a role and policy for the secret access. We've created an external secret which holds the path to the sensitive data in Vault and allowed the controller to create the secret in OpenShift. One final reminder, in closing. Secrets are stored in etcd, to protect secrets at rest pursue encrypting etcd: https://docs.openshift.com/container-platform/4.3/authentication/encrypting-etcd.html
 
 
 
