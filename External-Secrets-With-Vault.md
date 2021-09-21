@@ -84,13 +84,13 @@ Step 3. We will create a key:value pair password to store in our Vault.
 
 Step 4. We create a policy, an hcl or JSON file, which defines the access allowed to the secrets path.
 
-``oc rsh vault-0
+```
 vault policy write pmodemo - << EOF
 path "secret/data/vault-demo-secret1"
   { capabilities = ["read"]
 }
 EOF
-`` 
+```
 
 
 Step 5. We create a role, which defines a namespace and service account with the policy which was created earlier. We are making two, the external-secrets role is required, the vault role is used for testing later.
@@ -109,7 +109,7 @@ OCP_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 
 Now, lets do a Curl request to the Vault host (`oc get svc` in the project will allow you to get the IP:port of your Vault)
 
-```curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodemo"}' http://10.217.5.249:8200/v1/auth/kubernetes/login```
+```curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodemo1"}' http://10.217.5.249:8200/v1/auth/kubernetes/login```
 
 {"request_id":"5e833fc7-4f53-f7dc-edfe-2257a42793d1","lease_id":"","renewable":false,"lease_duration":0,"data":null,"wrap_info":null,"warnings":null,"auth":{"client_token":"s.ojvma4OkSZT7qKKRj7qYDswv","accessor":"K0pI3iNha8dUi3YCAxAzumRB","policies":["default","pmodemo"],"token_policies":["default","pmodemo"],"metadata":{"role":"pmodemo","service_account_name":"vault","service_account_namespace":"vault","service_account_secret_name":"","service_account_uid":"9218e2d0-56dd-48b6-b544-d136f79297a2"},"lease_duration":3600,"renewable":true,"entity_id":"05e3113e-7685-137a-c2c4-42fafcf5f71a","token_type":"service","orphan":true}
 
