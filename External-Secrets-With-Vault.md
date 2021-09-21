@@ -54,47 +54,57 @@ Thank you for installing HashiCorp Vault!
 
 Now that you have deployed Vault, you should look over the docs on using Vault with Kubernetes available here:https://www.vaultproject.io/docs/
 ```
+**caution**
 
+I have witnessed an outdated tag being used in the Helm chart. If you are seeing an image pull error, investigate the image within your Vault statefulset and adjust your chart or deployment accordingly. For a quick and dirty fix, edit the statefulset and add the image tag of ‘latest’. (This is a quick proof of concept, this will get you up and running to demo the theory.) We begin our journey with Vault by first enabling an authentication method. 
 
-I have witnessed an outdated tag being used in the Helm chart. If you are seeing an image pull error, investigate the image within your Vault statefulset and adjust your chart or deployment accordingly. For a quick and dirty fix, edit the statefulset and add the image tag of ‘latest’. (This is a quick proof of concept, this will get you up and running to demo the theory.) We begin our journey with Vault by first enabling an authentication method. In our case, we will be utilizing the kubernetes auth method and later, we will configure namespace and service account access. Because we are using a Dev environment, we will configure these at the pod level, utilizing `oc rsh` to access our Vault pod.
+In our case, we will be utilizing the kubernetes auth method and later, we will configure namespace and service account access. Because we are using a Dev environment, we will configure these at the pod level, utilizing `oc rsh` to access our Vault pod.
 
 
 Step 0. Rsh to the Vault pod
-Oc rsh vault-0
 
-Step 1. Enable Kubernetes Auth
-vault auth enable kubernetes
+``oc rsh vault-0``
+
+Step 1. Enable Kubernetes Auth (from within the pod)
+
+``vault auth enable kubernetes``
 
 Step 2. Configure our authentication to utilize the service account token and certificate of the Kubernetes host.
-vault write auth/kubernetes/config token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt issuer=https://kubernetes.default.svc
+
+``vault write auth/kubernetes/config token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt issuer=https://kubernetes.default.svc ``
 
 Step 3. We will create a key:value pair password to store in our Vault. 
-vault kv put secret/vault-demo-secret1 username="phil" password="notverysecure"
+
+``vault kv put secret/vault-demo-secret1 username="phil" password="notverysecure"``
 
 Step 4. We create a policy, an hcl or JSON file, which defines the access allowed to the secrets path.
-oc rsh vault-0
+
+``oc rsh vault-0
 vault policy write pmodemo - << EOF
 path "secret/data/vault-demo-secret1"
   { capabilities = ["read"]
 }
 EOF
+`` 
+
 
 Step 5. We create a role, which defines a namespace and service account with the policy which was created earlier. We are making two, the external-secrets role is required, the vault role is used for testing later.
 
-vault write auth/kubernetes/role/pmodemo1 bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m
+``vault write auth/kubernetes/role/pmodemo1 bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m``
 
-vault write auth/kubernetes/role/pmodemo bound_service_account_names=external-secrets-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m
+``vault write auth/kubernetes/role/pmodemo bound_service_account_names=external-secrets-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m``
 
 At this point, we've enabled Kubernetes authentication, configured our auth, created a secret, policy and role and we should now be able to interact with the Vault API. Let's test this:
+
 From the pod that will be accessing Vault, export the token from the ServiceAccount which the pod runs as. It's important to note here, if your pod is not mounting a service account token, i.e.   automountServiceAccountToken: false is set in the pod spec, you will not be able to utilize the kubernetes authentication method.
 
-oc rsh vault-0
-
+```oc rsh vault-0
 OCP_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+```
 
-Now, lets do a Curl request to the Vault host (`oc get svc` in the project)
+Now, lets do a Curl request to the Vault host (`oc get svc` in the project will allow you to get the IP:port of your Vault)
 
-sh-4.4$ curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodemo"}' http://10.217.5.249:8200/v1/auth/kubernetes/login
+```curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodemo"}' http://10.217.5.249:8200/v1/auth/kubernetes/login```
 
 {"request_id":"5e833fc7-4f53-f7dc-edfe-2257a42793d1","lease_id":"","renewable":false,"lease_duration":0,"data":null,"wrap_info":null,"warnings":null,"auth":{"client_token":"s.ojvma4OkSZT7qKKRj7qYDswv","accessor":"K0pI3iNha8dUi3YCAxAzumRB","policies":["default","pmodemo"],"token_policies":["default","pmodemo"],"metadata":{"role":"pmodemo","service_account_name":"vault","service_account_namespace":"vault","service_account_secret_name":"","service_account_uid":"9218e2d0-56dd-48b6-b544-d136f79297a2"},"lease_duration":3600,"renewable":true,"entity_id":"05e3113e-7685-137a-c2c4-42fafcf5f71a","token_type":"service","orphan":true}
 
@@ -102,7 +112,7 @@ sh-4.4$ curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodem
 
 If you see something similar to the above, Vault is installed and authentication is working. Now it is time to install and create an external secret! If you see an error, investigate the error appropriately, most common errors: permission overall or on the namespace or service account. 
 
-External-Secrets Installation and Configuration
+**External-Secrets Installation and Configuration**
 helm install external-secrets external-secrets/kubernetes-external-secrets
 
 The deployment of External-Secrets relies on environment variables to configure where/how to reach the Vault API. You can set the VAULT_ADDR variable to the IP:Port of your Vault implementation:
