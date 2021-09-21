@@ -55,11 +55,12 @@ Thank you for installing HashiCorp Vault!
 
 Now that you have deployed Vault, you should look over the docs on using Vault with Kubernetes available here:https://www.vaultproject.io/docs/
 ```
-**caution**
+**Image Tag Caution**
 
 I have witnessed an outdated tag being used in the Helm chart. If you are seeing an image pull error, investigate the image within your Vault statefulset and adjust your chart or deployment accordingly. For a quick and dirty fix, edit the statefulset and add the image tag of ‘latest’. (This is a quick proof of concept, this will get you up and running to demo the theory.) We begin our journey with Vault by first enabling an authentication method. 
 
-In our case, we will be utilizing the kubernetes auth method and later, we will configure namespace and service account access. Because we are using a Dev environment, we will configure these at the pod level, utilizing `oc rsh` to access our Vault pod.
+**Conofiguration**
+We will be utilizing the kubernetes auth method and later, we will configure namespace and service account access. Because we are using a Dev environment, we will configure these at the pod level, utilizing `oc rsh` to access our Vault pod.
 
 
 Step 0. Rsh to the Vault pod
@@ -113,19 +114,19 @@ Now, lets do a Curl request to the Vault host (`oc get svc` in the project will 
 
 If you see something similar to the above, Vault is installed and authentication is working. Now it is time to install and create an external secret! If you see an error, investigate the error appropriately, most common errors: permission overall or on the namespace or service account. 
 
-**External-Secrets Installation and Configuration**
+**External-Secrets Deployment and Configuration**
 
 ``oc project external-secrets``
 
-``helm install external-secrets external-secrets/kubernetes-external-secrets
+``helm install external-secrets external-secrets/kubernetes-external-secrets``
 
 The deployment of External-Secrets relies on environment variables to configure where/how to reach the Vault API. You can set the VAULT_ADDR variable to the IP:Port of your Vault implementation:
         - name: VAULT_ADDR
           value: http://10.217.5.249:8200 ``
 
 Lets now create the external-secret manifest. We will need to consider the data for the secret (being extracted from Vault) as well as the vaultMountPoint and vaultRole. 
-```
 
+```
 apiVersion: kubernetes-client.io/v1
 kind: ExternalSecret
 metadata:
@@ -140,14 +141,17 @@ spec:
   vaultMountPoint: kubernetes
   vaultRole: pmodemo 
 ```
-oc create -f secret1.yml
 
-And… we check the secret and see it has successfully pulled data from the Vault. 
-**add further explanation here**
+``oc create -f extsecret1.yml``
 
-EXT-Secrets pmo$ oc get es
+**Check the Results**
+When we successfully create the external-secret, we should in turn see a secret created on the cluster. So order of operations: external secret created, data pulled from Vault, ES controller creates cluster level secret. Only the Vault secret and the cluster secret should have the actual secret data, the external secret will contain the placeholder data. 
+
+``oc get es
 NAME            LAST SYNC   STATUS    AGE
 exsecretsdemo   6s          SUCCESS   22h
+
+``
 
 Finally, we take a look at the secret which was in turn created by the external-secrets controller as well as the data in the ES. We see password data in the secret but not in the external-secret, this allows us to store the ES in Git without ever exposing the secret.  
 
