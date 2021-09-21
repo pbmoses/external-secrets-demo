@@ -145,43 +145,39 @@ spec:
 ``oc create -f extsecret1.yml``
 
 **Check the Results**
+
 When we successfully create the external-secret, we should in turn see a secret created on the cluster. So order of operations: external secret created, data pulled from Vault, ES controller creates cluster level secret. Only the Vault secret and the cluster secret should have the actual secret data, the external secret will contain the placeholder data. 
 
-``oc get es
+```
+oc get es
+
 NAME            LAST SYNC   STATUS    AGE
 exsecretsdemo   6s          SUCCESS   22h
 
-``
+```
 
 Finally, we take a look at the secret which was in turn created by the external-secrets controller as well as the data in the ES. We see password data in the secret but not in the external-secret, this allows us to store the ES in Git without ever exposing the secret.  
 
-EXT-Secrets pmo$ oc get secrets
+``oc get secrets``
 
-
+``` 
 NAME                          TYPE                                  DATA   AGE
-...
 exsecretsdemo                 Opaque                                1      2m29s
+```
 
 
-oc get secrets exsecretsdemo -o yaml
-
-EXT-Secrets pmo$ oc get secret exsecretsdemo -o yaml
+``` 
+oc get secret exsecretsdemo -o yaml
 apiVersion: v1
 data:
   password: bm90dmVyeXNlY3VyZQ==
 kind: Secret
 ….
+```
 
+``oc get es exsecretsdemo -o yaml``
 
-
-
-
-
-
-
-
-oc get es exsecretsdemo -o yaml
-
+```
 spec:
   backendType: vault
   data:
@@ -190,12 +186,10 @@ spec:
     property: password
   vaultMountPoint: kubernetes
   vaultRole: pmodemo
-
-
-
+```
 
 And… it’s just that simple. 
-(To be added, ArgoCD setup and screenshots)
+
 
 
 
