@@ -3,7 +3,7 @@
 I’ve been spending a fair amount of time researching secrets management with OpenShift. The interest started with the IBM Vault plugin for ArgoCD, which allows us to store placeholders for secrets in Git but when used with the OpenShift GitOps operator it requires a fair amount of configuration and maintenance. I asked other co-workers to join in a roundtable to discuss secrets management and surrounding tooling. Among the leading interest in this space was “External Secrets” and so the journey began to start implementing each tool and comparing these not only at a platform level but also with consideration for GitOps and ArgoCD. At no point is a single solution being proposed as the best path forward for every case, development and operation requirements must be considered with each tool’s pros and cons in mind. This proof of concept is based on a Hashicorp Vault back end, as I have utilized this with several customers recently. 
 
 
-**What is External-Secrets?**
+**What are External-Secrets?**
 
 ES extends the Kubernetes API vi an ExternalSecrets object + a controller. In short, the external secret object declares how/where to fetch the secret data and in turn the controller converts that to a secret in the namespace. In the case of GitOps, utilizing external-secrets allows you to store the ES in Git without exposing a secret in Git or the tooling (Argo, Flux, etc). In the case of application consumption of secrets, pods are able to utilize secrets just as they normally would, with no maintenance or overhead, the ES controller creates the secret based on the eternal-secret manifest.  
 
