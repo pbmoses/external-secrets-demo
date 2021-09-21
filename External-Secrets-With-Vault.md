@@ -65,6 +65,7 @@ Now that you have deployed Vault, you should look over the docs on using Vault w
 I have witnessed an outdated tag being used in the Helm chart. If you are seeing an image pull error, investigate the image within your Vault statefulset and adjust your chart or deployment accordingly. For a quick and dirty fix, edit the statefulset and add the image tag of ‘latest’. (This is a quick proof of concept, this will get you up and running to demo the theory.) 
 
 **Configuration**
+
 We begin our journey with Vault by first enabling an authentication method and later, we will configure namespace and service account access. Because we are using a Dev environment, we will configure these at the pod level, utilizing `oc rsh` to access our Vault pod.
 
 
