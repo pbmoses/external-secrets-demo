@@ -1,11 +1,11 @@
 **Background**
 
-I’ve been spending a fair amount of time researching secrets management with OpenShift. The interest started with the IBM Vault plugin for ArgoCD, which allows us to store placeholders for secrets in Git but when used with the OpenShift GitOps operator it requires a fair amount of configuration and maintenance. I asked other co-workers to join in a roundtable to discuss secrets management and surrounding tooling. Among the leading interest in this space was “External Secrets” and so the journey began to start implementing each tool and comparing these not only at a platform level but also with consideration for GitOps and ArgoCD. At no point is a single solution being proposed as the best path forward for every case, development and operation requirements must be considered with each tool’s pros and cons in mind. This proof of concept is based on a Hashicorp Vault back end, as I have utilized this with several customers recently. 
+I’ve been spending a fair amount of time researching secrets management with OpenShift. The interest started with the IBM Vault plugin for ArgoCD, which allows us to store placeholders for secrets in Git but when used with the OpenShift GitOps operator it requires a fair amount of configuration and maintenance. I asked other co-workers to join in a roundtable to discuss secrets management and surrounding tooling. Among the leading interest in this space was “Kubernetes External Secrets” and so the journey began to start implementing each tool and comparing these not only at a platform level but also with consideration for GitOps and ArgoCD. At no point is a single solution being proposed as the best path forward for every case, development and operation requirements must be considered with each tool’s pros and cons in mind. This proof of concept is based on a Hashicorp Vault back end, as I have utilized this with several customers recently. 
 
 
 **What are External-Secrets?**
 
-External-Secrets extends the Kubernetes API vi an ExternalSecrets object + a controller. In short, the ExternalSecret object declares how/where to fetch the secret data and in turn the controller converts that to a secret in the namespace. In the case of GitOps, utilizing External-Secrets allows you to store the External-Secret in Git without exposing a secret in Git or the tooling (Argo, Flux, etc). In the case of application consumption of secrets, pods are able to utilize secrets just as they normally would, with little maintenance or overhead, the External-Secrets controller creates the secret based on the eternal-secret manifest. Everbody knows the rules... NO SECRETS IN GIT! utilizing External-Secrets allows us to play by the rules. 
+External-secrets extends the Kubernetes API vi an ExternalSecrets object + a controller. In short, the ExternalSecret object declares how/where to fetch the secret data and in turn the controller converts that to a secret in the namespace. In the case of GitOps, utilizing external-secrets allows you to store the External-Secret in Git without exposing a secret in Git or the tooling (Argo, Flux, etc). In the case of application consumption of secrets, pods are able to utilize secrets just as they normally would, with little maintenance or overhead, the External-Secrets controller creates the secret based on the eternal-secret manifest. Everbody knows the rules... NO SECRETS IN GIT! utilizing external secrets allows us to play by the rules. 
 
 **Assumptions for this Demo**
 
@@ -17,7 +17,7 @@ External-Secrets extends the Kubernetes API vi an ExternalSecrets object + a con
 **it is important to note that there has been concern around the default helm chart used for deploying the dev Vault environment. The steps taken here are a proof of concept and the dev Vault should not be run with the default config outside of a sandbox/dev environment.**
 
 
-Utilizing External-Secrets is an incredibly simple process consisting of installing the tooling and creating  your external-secret manifest based on secrets management back end in use. Secrets management back ends are not limited to Vault, you can see all of the documentation on External=Secrets here: https://github.com/external-secrets/kubernetes-external-secrets
+Deploying external secrets is an incredibly simple process consisting of installing the tooling and creating  your external-secret manifest based on secrets management back end in use. Secrets management back ends are not limited to Vault, you can see all of the documentation on External=Secrets here: https://github.com/external-secrets/kubernetes-external-secrets
 
 A large portion of this demo will revolve around configuring Vault. We will touch on the concepts but not deep dive into the advanced configuration options of Vault. 
 
@@ -96,7 +96,7 @@ EOF
 ```
 
 
-Step 5. We create a role, which defines a namespace and service account with the policy which was created earlier. We are making two, the external-secrets role is required, the vault role is used for testing later. It is important to note that you will need to set the bound_service_account_names and the service_account_namespaces to those which are present in the deployment (external-secrets) or statefulset (vault) for your cluster. 
+Step 5. We create a role, which defines a namespace and service account with the policy which was created earlier. We are creating two, the external secrets namespace role is required, the vault role is used for testing later. It is important to note that you will need to set the bound_service_account_names and the service_account_namespaces to those which are present in the deployment (external-secrets) or statefulset (vault) for your cluster. 
 
 ``vault write auth/kubernetes/role/pmodemo1 bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m``
 
