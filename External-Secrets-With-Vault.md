@@ -136,7 +136,7 @@ Lets now create the external-secret manifest. We will need to consider the data 
 apiVersion: kubernetes-client.io/v1
 kind: ExternalSecret
 metadata:
-  name: exsecretsdemo
+  name: exsecret1
   namespace: vault 
 spec:
   backendType: vault
@@ -158,7 +158,7 @@ When we successfully create the external-secret, we should in turn see a secret 
 oc get es
 
 NAME            LAST SYNC   STATUS    AGE
-exsecretsdemo   6s          SUCCESS   22h
+exsecret1       6s          SUCCESS   22h
 
 ```
 
@@ -168,12 +168,12 @@ Finally, we take a look at the secret which was in turn created by the external-
 
 ``` 
 NAME                          TYPE                                  DATA   AGE
-exsecretsdemo                 Opaque                                1      2m29s
+exsecret1                     Opaque                                1      2m29s
 ```
 
 
 ``` 
-oc get secret exsecretsdemo -o yaml
+oc get secret exsecret1 -o yaml
 apiVersion: v1
 data:
   password: bm90dmVyeXNlY3VyZQ==
