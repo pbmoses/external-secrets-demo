@@ -190,6 +190,8 @@ spec:
 
 And… it’s just that simple. 
 
+**Added Value, adding our external-secret to ArgoCD**
 
+With a running instance of ArgoCD, we can 
 
 
