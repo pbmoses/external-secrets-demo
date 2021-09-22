@@ -183,7 +183,7 @@ data:
 kind: Secret
 ….
 ```
-You can decide the secret data and compare it to the secret you setup earlier:
+You can decode the secret data and compare it to the secret you setup earlier:
 ```
 echo "bm90dmVyeXNlY3VyZQ==" | base64 -d 
 notverysecure
