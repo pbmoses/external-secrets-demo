@@ -62,7 +62,7 @@ Now that you have deployed Vault, you should look over the docs on using Vault w
 **Image Tag Caution**
 (bonus exercise!)
 
-I have witnessed an outdated tag being used in the Helm chart. If you are seeing an image pull error, investigate the image within your Vault statefulset and adjust your chart or deployment accordingly. For a quick and dirty fix, edit the statefulset and add the image tag of ‘latest’. (This is a quick proof of concept, this will get you up and running to demo the theory.) 
+I have witnessed an outdated tag being used in the Helm chart. If you are seeing an image pull error, investigate the image within your Vault statefulset and adjust your chart or deployment accordingly. For a quick and dirty fix, edit the statefulset and add the image tag of ‘latest’. (This is a quick proof of concept, this will get you up and running to complete the demo.) 
 
 **Configuration**
 
