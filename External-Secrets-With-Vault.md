@@ -1,55 +1,61 @@
-**Background**
+# External Secrets with Hashicorp Vault
 
-I’ve been spending a fair amount of time researching secrets management with OpenShift. The interest started with the IBM Vault plugin for ArgoCD, which allows us to store placeholders for secrets in Git but when used with the OpenShift GitOps operator it requires a fair amount of configuration and maintenance. I asked other co-workers to join in a roundtable to discuss secrets management and surrounding tooling. Among the leading interest in this space was “Kubernetes External Secrets” and so the journey began to start implementing each tool and comparing these not only at a platform level but also with consideration for GitOps and ArgoCD. At no point is a single solution being proposed as the best path forward for every case, development and operation requirements must be considered with each tool’s pros and cons in mind. This proof of concept is based on a Hashicorp Vault back end, as I have utilized this with several customers recently. 
+## Background
+
+I’ve been spending a fair amount of time researching secrets management with OpenShift. The interest started with the [IBM Vault Plugin](https://github.com/IBM/argocd-vault-plugin) for [Argo CD](https://argoproj.github.io/argo-cd/), which allows us to store placeholders for [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/) in Git. But, when used with the OpenShift GitOps operator, a fair amount of configuration and maintenance is required. I asked other co-workers to join in a roundtable to discuss secrets management and surrounding tooling. Among the leading interest in this space was [Kubernetes External Secrets](https://github.com/external-secrets/kubernetes-external-secrets) (External Secrets) and so the journey began to start implementing each tool and comparing these not only at a platform level, but also with consideration for GitOps and Argo CD. At no point is a single solution being proposed as the best path forward for every use case. Development and operation requirements must be considered along with the pros and cons of each tool in mind. This proof of concept is based on a [Hashicorp Vault](https://www.vaultproject.io/) back end, as I have utilized this tool with several customers recently. 
 
 
-**What are External-Secrets?**
+## What are External Secrets?
 
-External-secrets extends the Kubernetes API vi an ExternalSecrets object + a controller. In short, the ExternalSecret object declares how/where to fetch the secret data and in turn the controller converts that to a secret in the namespace. In the case of GitOps, utilizing external-secrets allows you to store the External-Secret in Git without exposing a secret in Git or the tooling (Argo, Flux, etc). In the case of application consumption of secrets, pods are able to utilize secrets just as they normally would, with little maintenance or overhead, the External-Secrets controller creates the secret based on the eternal-secret manifest. Everbody knows the rules... NO SECRETS IN GIT! utilizing external secrets allows us to play by the rules. 
+External Secrets extends the Kubernetes API vi an _ExternalSecrets_ object + a controller. In short, the _ExternalSecret_ object declares how and where to fetch the secret data from the external source, and in turn, the controller converts that resource into a secret in the namespace for which the ExternalSecret is created. In the case of GitOps, utilizing external-secrets allows you to store the _ExternalSecret_ in Git without exposing the sensitive asset in Git or in the GitOps tool (Argo, Flux, etc). In the case of application consumption of secrets, pods are still able to utilize secrets just as they normally would. The External Secrets controller creates the secret based on the _ExternalSecrets_ manifest. Everybody knows the rules... NO SECRETS IN GIT! Utilizing External Secrets allows us to abide by by these rules. 
 
-**Assumptions for this Demo**
+## Assumptions for this Demo
 
-- Access to a working OpenShift cluster. If a Cluster is not available, Code Ready Containers can be utilized to PoC. https://developers.redhat.com/products/codeready-containers/overview
-- A Hashicorp vault implementation. In the demo, dev mode is utilized with a single pod. This is not meant for production and should not be run outside of sandbox or development environment
+- Access to a working OpenShift cluster. If a Cluster is not available, [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/overview) can be utilized for this exercise.
+- A Hashicorp Vault implementation. In the demo, [dev mode](https://www.vaultproject.io/docs/concepts/dev-server) is utilized which deploys a single pod instance. "Dev mode" is not meant for production and should not be run outside of sandbox or development environment
 - A secret to store. 
 
 
-**it is important to note that there has been concern around the default helm chart used for deploying the dev Vault environment. The steps taken here are a proof of concept and the dev Vault should not be run with the default config outside of a testing environment.**
+Deploying External Secrets is an incredibly simple process consisting of installing the tooling and creating your _ExternalSecret_ manifest based on secrets management back end in use. Secrets management backends are not limited to Hashicorp Vault as External Secrets supports a number of providers. A full list of supported backends can be found [here](https://github.com/external-secrets/kubernetes-external-secrets#backends)
 
+A large portion of this demo will revolve around configuring Vault. We will touch on the basic concepts, but not dive into the advanced configuration options available. 
 
-Deploying external secrets is an incredibly simple process consisting of installing the tooling and creating  your external-secret manifest based on secrets management back end in use. Secrets management back ends are not limited to Vault, you can see all of the documentation on External=Secrets here: https://github.com/external-secrets/kubernetes-external-secrets
+Assuming an OpenShift cluster or CRC is available and you are currently logged in, create 2 projects: one for external secrets and one for the dev vault instance. We will also add [Helm](https://helm.sh) repositories for each of the two tools. 
 
-A large portion of this demo will revolve around configuring Vault. We will touch on the concepts but not deep dive into the advanced configuration options of Vault. 
+## Lets Create the projects and add the Helm repositories
 
-Assuming an OpenShift cluster or CRC is installed and you are logged in, we can create 2 projects, one for external secrets and one for the dev vault. We will also add the Helm repositories for each of the two tools we will use. 
+```shell
+oc new-project external-secrets
+```
 
-**Lets Create the projects and add the Helm repositories**
+```shell
+helm repo add external-secrets https://external-secrets.github.io/kubernetes-external-secrets/
+```
 
-``oc new-project vault``
+```shell
+oc new-project vault
+```
 
-``helm repo add hashicorp https://helm.releases.hashicorp.com``
+```shell
+helm repo add hashicorp https://helm.releases.hashicorp.com
+```
 
-``oc new-project external secrets`` 
+## Configuring Vault
 
-``helm repo add external-secrets https://external-secrets.github.io/kubernetes-external-secrets/``
+When utilizing Vault as a secrets manager back end to store secrets, we can consider the steps below for a working implementation. [Sealing and unsealing](https://www.vaultproject.io/docs/concepts/seal) the Vault is out of scope for the demo as the Vault will be unsealed when installed using "Dev Mode". We are installing Vault from a Helm chart without the use of the [Vault Agent Injector](https://www.vaultproject.io/docs/platform/k8s/injector). I’m approaching this to concentrate on the strengths of External Secrets and the ability to allow the tooling to handle secrets without additional injection. Only a single `vault-0` pod will start as an ephemeral Vault instance.
 
+Change into the `vault` project and deploy Vault using Helm.
 
+```shell
+oc project vault
+``` 
 
-**Configuring Vault**
+```shell
+helm upgrade -i -n vault vault hashicorp/vault --set "global.openshift=true" --set "server.dev.enabled=true" --set="injector.enabled=false" --set="server.image.repository=docker.io/hashicorp/vault"
+```
 
-When utilizing Vault as a secrets manager back end to store secrets we can consider the steps below for a working implementation. Sealing and unsealing the Vault is out of scope for the demo, the Vault will be unsealed when installed. We are installing Vault from a Helm chart, no injector is being installed. I’m approaching this to concentrate on the strengths of External-Secrets and the ability to allow the tooling to handle secrets without additional injection. Only a single vault-0 pod will start as an ephemeral Vault.
-
-- Enable Kubernetes authentication.
-- Configure authentication to utilize the pod service account token and cert of the k8s host. 
-- Create a secret.
-- Create a Vault policy to access the secret (or secret path.)
-- Create a role to associate with the policy created earlier. 
-
-``oc project vault`` 
-
-``helm install vault hashicorp/vault --set "global.openshift=true" --set "server.dev.enabled=true" --set="injector.enabled=false"``
-
-```NAME: vault
+```shell
+NAME: vault
 LAST DEPLOYED: Thu Sep 16 12:10:00 2021
 NAMESPACE: vault
 STATUS: deployed
@@ -59,35 +65,47 @@ Thank you for installing HashiCorp Vault!
 
 Now that you have deployed Vault, you should look over the docs on using Vault with Kubernetes available here:https://www.vaultproject.io/docs/
 ```
-**Image Tag Caution**
-(bonus exercise!)
 
-I have witnessed an outdated tag being used in the Helm chart. If you are seeing an image pull error, investigate the image within your Vault statefulset and adjust your chart or deployment accordingly. For a quick and dirty fix, edit the statefulset and add the image tag of ‘latest’. (This is a quick proof of concept, this will get you up and running to complete the demo.) 
+## Configuration
 
-**Configuration**
+We begin our journey with Vault by first enabling an authentication method and later, we will configure namespace and service account access. Because we are using a Dev environment, we will implement these configurations at the pod level utilizing `oc rsh` to access our Vault pod.
 
-We begin our journey with Vault by first enabling an authentication method and later, we will configure namespace and service account access. Because we are using a Dev environment, we will configure these at the pod level, utilizing `oc rsh` to access our Vault pod.
+In particular, following steps will be performed: 
+
+- Enable [Kubernetes authentication](https://www.vaultproject.io/docs/auth/kubernetes).
+- Configure authentication to utilize the pod service account token and cert of the k8s host. 
+- Create a secret.
+- Create a [Vault Policy](https://www.vaultproject.io/docs/concepts/policies) to access the secret (or secret path.)
+- Create a [role](https://www.vaultproject.io/docs/auth/approle) to associate with the policy created earlier. 
 
 
-Step 0. Rsh to the Vault pod
+Step 0. Execute a remote shell session (rsh) to the Vault pod
 
-``oc rsh vault-0``
+```shell
+oc rsh vault-0
+```
 
 Step 1. Enable Kubernetes Auth (from within the pod)
 
-``vault auth enable kubernetes``
-
-Step 2. Configure our authentication to utilize the service account token and certificate of the Kubernetes host.
-
-``vault write auth/kubernetes/config token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt issuer=https://kubernetes.default.svc ``
-
-Step 3. We will create a key:value pair password to store in our Vault. 
-
-``vault kv put secret/vault-demo-secret1 username="phil" password="notverysecure"``
-
-Step 4. We create a policy, an hcl or JSON file, which defines the access allowed to the secrets path.
-
+```shell
+vault auth enable kubernetes
 ```
+
+Step 2. Configure our authentication to utilize the service account token mounted in the pod and certificate of the Kubernetes cluster.
+
+```shell
+vault write auth/kubernetes/config token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt issuer=https://kubernetes.default.svc
+```
+
+Step 3. We will utilize the [KV secrets engine](https://www.vaultproject.io/docs/secrets/kv) and create a key:value pair password to store in our Vault. 
+
+```shell
+vault kv put secret/vault-demo-secret1 username="phil" password="notverysecure"
+```
+
+Step 4. Create a policy (an hcl or JSON file) which defines the access allowed to the secrets path.
+
+```shell
 vault policy write pmodemo - << EOF
 path "secret/data/vault-demo-secret1"
   { capabilities = ["read"]
@@ -95,47 +113,59 @@ path "secret/data/vault-demo-secret1"
 EOF
 ```
 
+Step 5. Create roles to associate the namespace and service account with the policy which was created earlier. Two roles will be created: one for the external secrets namespace and the other for testing later on. It is important to note that you will need to set the `bound_service_account_names` and the `service_account_namespaces` to those associated with the Deployment (`external-secrets`) or StatefulSet (`vault`). 
 
-Step 5. We create a role, which defines a namespace and service account with the policy which was created earlier. We are creating two, the external secrets namespace role is required, the vault role is used for testing later. It is important to note that you will need to set the bound_service_account_names and the service_account_namespaces to those which are present in the deployment (external-secrets) or statefulset (vault) for your cluster. 
+```shell
+vault write auth/kubernetes/role/pmodemo1 bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m
+```
 
-``vault write auth/kubernetes/role/pmodemo1 bound_service_account_names=vault bound_service_account_namespaces=vault policies=pmodemo ttl=60m``
+```shell
+vault write auth/kubernetes/role/pmodemo bound_service_account_names=external-secrets-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m
+```
 
-``vault write auth/kubernetes/role/pmodemo bound_service_account_names=external-secrets-kubernetes-external-secrets bound_service_account_namespaces=external-secrets policies=pmodemo ttl=60m``
+At this point, we've enabled Kubernetes authentication, configured our auth, created a secret, policy, and role, and we should now be able to interact with the Vault API. Let's test this:
 
-At this point, we've enabled Kubernetes authentication, configured our auth, created a secret, policy and role and we should now be able to interact with the Vault API. Let's test this:
+From the pod that will be accessing Vault, export the Service Account token. It is important to note here that if your pod is not mounting a service account token (`automountServiceAccountToken: false`), you will not be able to utilize the Kubernetes Auth method.
 
-From the pod that will be accessing Vault, export the token from the ServiceAccount which the pod runs as. It's important to note here, if your pod is not mounting a service account token, i.e.   automountServiceAccountToken: false is set in the pod spec, you will not be able to utilize the kubernetes authentication method.
-
-```oc rsh vault-0
+```shell
 OCP_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 ```
 
-Now, lets do a Curl request to the Vault host (`oc get svc` in the project will allow you to get the IP:port of your Vault)
+Now, lets make a request to Vault to validate out setup:
 
-```curl -k --request POST --data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodemo1"}' http://10.217.5.249:8200/v1/auth/kubernetes/login```
+```shell
+wget --no-check-certificate -q -O- --post-data '{"jwt": "'"$OCP_TOKEN"'", "role": "pmodemo1"}' http://vault:8200/v1/auth/kubernetes/login
+```
 
 {"request_id":"5e833fc7-4f53-f7dc-edfe-2257a42793d1","lease_id":"","renewable":false,"lease_duration":0,"data":null,"wrap_info":null,"warnings":null,"auth":{"client_token":"s.ojvma4OkSZT7qKKRj7qYDswv","accessor":"K0pI3iNha8dUi3YCAxAzumRB","policies":["default","pmodemo"],"token_policies":["default","pmodemo"],"metadata":{"role":"pmodemo","service_account_name":"vault","service_account_namespace":"vault","service_account_secret_name":"","service_account_uid":"9218e2d0-56dd-48b6-b544-d136f79297a2"},"lease_duration":3600,"renewable":true,"entity_id":"05e3113e-7685-137a-c2c4-42fafcf5f71a","token_type":"service","orphan":true}
 
 
-If you see something similar to the above, Vault is installed and authentication is working. Now it is time to install and create an external secret! If you see an error, investigate the error appropriately, most common errors:
+If a response similar to the above is displayed, Vault is installed and authentication is working. Now it is time to install and create an external secret! If you see an error, investigate the error appropriately. One of the most common errors is as follows:
+
+```shell
 - Error: connect EHOSTUNREACH = the vault endpoint env var in external secrets deployment is incorrect
 - ERROR, namespace not authorized = the namespace is not set properly in the role 
 - ERROR, service account name not authorized = the service account is not proper in the role
 - 403 permission denied = review your policy
-
-**External-Secrets Deployment and Configuration**
-
-``oc project external-secrets``
-
-``helm install external-secrets external-secrets/kubernetes-external-secrets``
-
-The deployment of External-Secrets relies on environment variables to configure where/how to reach the Vault API. You can set the VAULT_ADDR variable to the IP:Port of your Vault implementation:
-        - name: VAULT_ADDR
-          value: http://10.217.5.249:8200 ``
-
-Lets now create the external-secret manifest. We will need to consider the data for the secret (being extracted from Vault) as well as the vaultMountPoint and vaultRole. 
-
 ```
+
+## External Secrets Deployment and Configuration**
+
+Next, install and configure External Secrets:
+
+```shell
+oc project external-secrets
+```
+
+```shell
+helm upgrade -i -n external-secrets external-secrets external-secrets/kubernetes-external-secrets --set "env.VAULT_ADDR=http://vault.vault.svc:8200"
+```
+
+The deployment of External Secrets relies on environment variables to configure where/how to reach the Vault API. This is set via the Helm value passed into the command above referencing the location of the Vault instance.
+
+Let's now create the _ExternalSecret_ manifest in a file called `extsecret1.yml` to reference the secret created in Vault previously. We will need to specify the `vaultMountPoint` and `vaultRole` properties to refer to the location of the secret within Vault. 
+
+```shell
 apiVersion: kubernetes-client.io/v1
 kind: ExternalSecret
 metadata:
@@ -151,49 +181,59 @@ spec:
   vaultRole: pmodemo
 ```
 
-``oc create -f extsecret1.yml``
+```shell
+oc create -f extsecret1.yml
+```
 
-**Check the Results**
+## Check the Results
 
-When we successfully create the external-secret, we should in turn see a secret created on the cluster. So order of operations: external secret created, data pulled from Vault, ES controller creates cluster level secret. Only the Vault secret and the cluster secret should have the actual secret data, the external secret will contain the placeholder data. 
+When we successfully create the _ExternalSecret_ manifest, the External Secrets controller will create a Kubernetes Secret on the cluster containing the secret stored in Vault. So order of operations: 
+
+1. _ExternalSecret_ created
+2. Data pulled from Vault
+3. External Secret controller creates Kubernetes secret.
+
+Only the Vault secret and the cluster secret should have the actual secret data. The _ExternalSecret_ will contain just the reference. 
 
 ```
-oc get es
+oc get es -n vault
 
 NAME            LAST SYNC   STATUS    AGE
 exsecret1       6s          SUCCESS   22h
 
 ```
 
-Finally, we take a look at the secret which was in turn created by the external-secrets controller as well as the data in the ES. We see password data in the secret but not in the external-secret, this allows us to store the ES in Git without ever exposing the secret.  
+Finally, we can take a look at the secret that was created by the External Secrets controller as well as the data in the _ExternalSecret_. We see password data in the secret but not in the _ExternalSecret_, which allows us to store the _ExternalSecret_ in Git without ever exposing the actual secret data.  
 
-``oc get secrets``
+```shell
+oc -n vault get secrets exsecret1
+```
 
-``` 
+```shell 
 NAME                          TYPE                                  DATA   AGE
 exsecret1                     Opaque                                1      2m29s
 ```
 
-
-``` 
-oc get secret exsecret1 -o yaml
+```shell
+oc -n vault get secret exsecret1 -o yaml
 apiVersion: v1
 data:
   password: bm90dmVyeXNlY3VyZQ==
 kind: Secret
 ….
 ```
-You can decode the secret data and compare it to the secret you setup earlier:
-```
-echo "bm90dmVyeXNlY3VyZQ==" | base64 -d 
+
+You can view the decoded secret data and compare it to the secret you setup earlier:
+
+```shell
+oc -n vault extract secret/exsecret1 --to=-
+# password
 notverysecure
 ``` 
 
-``oc get es exsecret1 -o yaml``
+And we can once again verify that there is no sensitive data in the _ExternalSecret_ manifest which would present a risk when committed to a git repository:
 
-And we verify there is no data in the manifest which would present a risk
-
-```
+```yaml
 spec:
   backendType: vault
   data:
@@ -204,7 +244,7 @@ spec:
   vaultRole: pmodemo
 ```
 
-It’s just that simple. In this demo we've setup a dev Vault, enabled Kubernetes authentication, created a secret, a role and policy for the secret access. We've created an external secret which holds the path to the sensitive data in Vault and allowed the controller to create the secret in OpenShift. One final reminder, in closing. Secrets are stored in etcd, to help protect secrets at rest pursue encrypting etcd: https://docs.openshift.com/container-platform/4.7/security/encrypting-etcd.html
+It’s just that simple. In this demo, we setup an instance of Vault in "dev mode", enabled Kubernetes authentication, created a secret, a role and policy to manage access to the secret. We then created an _ExternalSecret_ which holds the path to the sensitive data in Vault and allowed the controller to create the secret in OpenShift. One final reminder, in closing. Secrets are stored as an encoded value in etcd. To help protect secrets at rest, pursue encrypting etcd: [https://docs.openshift.com/container-platform/4.7/security/encrypting-etcd.html](https://docs.openshift.com/container-platform/4.7/security/encrypting-etcd.html).
 
 
 
